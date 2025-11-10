@@ -832,11 +832,13 @@
             scene.add(trailLine);
 
             const orbitRing = new THREE.Mesh(
-                new THREE.RingGeometry(69, 70, 128),
+                new THREE.RingGeometry(69, 71, 128),
                 new THREE.MeshBasicMaterial({ color: 0x444444, side: THREE.DoubleSide, transparent: true, opacity: 0.2 })
             );
-            orbitRing.rotation.x = Math.PI / 2;
-            orbitRing.rotation.y = 0.087;
+            // Rotate to align with Moon's inclined orbit
+            // First rotate to xy-plane, then tilt by inclination angle
+            orbitRing.rotation.x = Math.PI / 2 - 0.087;  // Subtract inclination from horizontal
+            orbitRing.rotation.z = 0;  // No rotation around z-axis
             scene.add(orbitRing);
 
             // Shadow geometry
@@ -1203,6 +1205,9 @@
                 time = (degrees * Math.PI) / 180;
                 positionValue.textContent = degrees.toFixed(0) + '°';
 
+                // Update Moon position immediately
+                updateMoonPosition(time);
+
                 // Pause the simulation when manually positioning
                 if (!isPaused) {
                     playPauseBtn.click();
@@ -1268,15 +1273,23 @@
                 return { phase: 'No Eclipse', shadow: 0, color: { r: 0.67, g: 0.67, b: 0.67 } };
             }
 
+            // Helper function to calculate Moon position on inclined orbit
+            function updateMoonPosition(t) {
+                const inc = 0.087;  // 5.14 degrees in radians
+                moon.position.x = Math.cos(t) * moonOrbitRadius;
+                moon.position.z = Math.sin(t) * moonOrbitRadius * Math.cos(inc);
+                moon.position.y = Math.sin(t) * moonOrbitRadius * Math.sin(inc);
+            }
+
+            // Initialize Moon position
+            updateMoonPosition(time);
+
             function animate() {
                 requestAnimationFrame(animate);
 
                 if (!isPaused) {
                     time += moonOrbitSpeed * timeScale;
-                    const inc = 0.087;
-                    moon.position.x = Math.cos(time) * moonOrbitRadius;
-                    moon.position.z = Math.sin(time) * moonOrbitRadius * Math.cos(inc);
-                    moon.position.y = Math.sin(time) * moonOrbitRadius * Math.sin(inc);
+                    updateMoonPosition(time);
 
                     if (toggleStates.trails) {
                         trailPositions.push(moon.position.x, moon.position.y, moon.position.z);
