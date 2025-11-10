@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lunar Eclipse Simulation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg-primary: #000000;
+            --bg-secondary: #0a0a0a;
+            --border-color: #404040;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --text-muted: #888888;
+            --accent-primary: #8b5cf6;
+            --accent-danger: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            overflow: hidden;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .header-right {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-secondary);
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+        }
+
+        /* Control Panel */
+        .control-panel {
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            width: 300px;
+            max-height: calc(100vh - 100px);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow-y: auto;
+            z-index: 50;
+        }
+
+        .panel-section {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .panel-section:last-child {
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        /* Phase Display */
+        .phase-display {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .phase-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .phase-shadow {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-primary);
+            transition: width 0.3s ease;
+        }
+
+        /* Playback Controls */
+        .playback-controls {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .btn {
+            flex: 1;
+            height: 40px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--accent-primary);
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-icon {
+            width: 40px;
+            flex: 0 0 40px;
+            padding: 0;
+        }
+
+        /* Slider */
+        .slider-group {
+            margin-top: 12px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .slider-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Camera Presets */
+        .camera-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .camera-btn {
+            height: 36px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .camera-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+
+        .camera-btn.active {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+        }
+
+        /* Toggles */
+        .toggle-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .toggle-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toggle-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .toggle-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-switch {
+            width: 36px;
+            height: 20px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(16px);
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Info Panel */
+        .info-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            z-index: 50;
+        }
+
+        .info-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .info-text {
+            font-size: 12px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .info-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .info-list li {
+            padding: 8px 0;
+            font-size: 12px;
+            color: var(--text-muted);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .info-list li:last-child {
+            border-bottom: none;
+        }
+
+        /* Loading */
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 1000;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Equations Panel */
+        .equations-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 400px;
+            max-height: calc(100vh - 100px);
+            background: rgba(10, 10, 10, 0.95);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow-y: auto;
+            z-index: 50;
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+        }
+
+        /* Prevent pointer events on canvas but allow on UI */
+        #canvas-container {
+            pointer-events: none;
+        }
+
+        #canvas-container canvas {
+            pointer-events: auto;
+        }
+
+        .equations-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .equations-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .equation-item {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .equation-item:last-child {
+            border-bottom: none;
+        }
+
+        .equation-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent-primary);
+            margin-bottom: 8px;
+        }
+
+        .equation-formula {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            font-size: 14px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            padding: 10px;
+            background: rgba(139, 92, 246, 0.1);
+            border-left: 3px solid var(--accent-primary);
+            border-radius: 4px;
+            line-height: 1.8;
+        }
+
+        .equation-description {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .equation-highlight {
+            color: #ff6b6b;
+            font-weight: 600;
+        }
+
+        .equation-var {
+            color: #4ecdc4;
+            font-style: italic;
+        }
+
+        .rayleigh-section {
+            background: rgba(255, 107, 107, 0.1);
+            border-left-color: #ff6b6b;
+        }
+
+        .rayleigh-section .equation-label {
+            color: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+        <div>Loading Simulation</div>
+    </div>
+
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">Lunar Eclipse Simulation</div>
+        </div>
+        <div class="header-right">
+            <button class="icon-btn" id="toggle-equations-btn" title="Toggle Equations Panel">
+                <i data-lucide="function-square"></i>
+            </button>
+            <button class="icon-btn" title="Information">
+                <i data-lucide="info"></i>
+            </button>
+            <button class="icon-btn" title="Settings">
+                <i data-lucide="settings"></i>
+            </button>
+        </div>
+    </header>
+
+    <div id="canvas-container"></div>
+
+    <aside class="control-panel">
+        <div class="panel-section">
+            <div class="section-title">Eclipse Phase</div>
+            <div class="phase-display">
+                <div class="phase-name" id="phase-name">Initializing</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="phase-shadow" id="phase-shadow">Shadow: 0.0%</div>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="section-title">Playback</div>
+            <div class="playback-controls">
+                <button class="btn btn-icon" id="step-back-btn" title="Step Back">
+                    <i data-lucide="skip-back"></i>
+                </button>
+                <button class="btn btn-primary" id="play-pause-btn">
+                    <i data-lucide="pause"></i>
+                    <span>Pause</span>
+                </button>
+                <button class="btn btn-icon" id="step-forward-btn" title="Step Forward">
+                    <i data-lucide="skip-forward"></i>
+                </button>
+                <button class="btn btn-icon" id="reset-btn" title="Reset">
+                    <i data-lucide="rotate-ccw"></i>
+                </button>
+            </div>
+            <div class="slider-group">
+                <div class="slider-label">
+                    <span>Speed</span>
+                    <span class="slider-value" id="speed-value">2.0x</span>
+                </div>
+                <input type="range" id="speed-slider" min="0.1" max="10" step="0.1" value="2">
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="section-title">Camera View</div>
+            <div class="camera-grid">
+                <button class="camera-btn active" data-view="orbit">
+                    <i data-lucide="orbit"></i>
+                    <span>Orbital</span>
+                </button>
+                <button class="camera-btn" data-view="side">
+                    <i data-lucide="move-horizontal"></i>
+                    <span>Side</span>
+                </button>
+                <button class="camera-btn" data-view="top">
+                    <i data-lucide="arrow-up"></i>
+                    <span>Top</span>
+                </button>
+                <button class="camera-btn" data-view="moon">
+                    <i data-lucide="circle"></i>
+                    <span>Moon</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="section-title">Visualization</div>
+            <div class="toggle-list">
+                <div class="toggle-item" data-toggle="shadows">
+                    <span class="toggle-label">
+                        <i data-lucide="cone"></i>
+                        Shadow Cones
+                    </span>
+                    <div class="toggle-switch active"></div>
+                </div>
+                <div class="toggle-item" data-toggle="rays">
+                    <span class="toggle-label">
+                        <i data-lucide="zap"></i>
+                        Light Rays
+                    </span>
+                    <div class="toggle-switch active"></div>
+                </div>
+                <div class="toggle-item" data-toggle="labels">
+                    <span class="toggle-label">
+                        <i data-lucide="tag"></i>
+                        Labels
+                    </span>
+                    <div class="toggle-switch active"></div>
+                </div>
+                <div class="toggle-item" data-toggle="trails">
+                    <span class="toggle-label">
+                        <i data-lucide="route"></i>
+                        Moon Trail
+                    </span>
+                    <div class="toggle-switch active"></div>
+                </div>
+                <div class="toggle-item" data-toggle="equations">
+                    <span class="toggle-label">
+                        <i data-lucide="function-square"></i>
+                        Equation Labels
+                    </span>
+                    <div class="toggle-switch active"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-section">
+            <div class="section-title">Physics Data</div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Distance</div>
+                    <div class="stat-value" id="moon-distance">---</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Angle</div>
+                    <div class="stat-value" id="moon-angle">---</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+
+        window.addEventListener('load', () => {
+            document.getElementById('loading').style.display = 'none';
+            initSimulation();
+        });
+
+        function initSimulation() {
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+
+            const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 5000);
+            camera.position.set(200, 100, 300);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            let cameraRotation = { x: 0, y: 0 };
+            let cameraDistance = 400;
+            let panOffset = new THREE.Vector3(0, 0, 0);
+
+            renderer.domElement.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            renderer.domElement.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const deltaX = e.clientX - previousMousePosition.x;
+                    const deltaY = e.clientY - previousMousePosition.y;
+
+                    if (e.button === 2 || e.ctrlKey) {
+                        panOffset.x -= deltaX * 0.1;
+                        panOffset.y += deltaY * 0.1;
+                    } else {
+                        cameraRotation.y += deltaX * 0.005;
+                        cameraRotation.x += deltaY * 0.005;
+                        cameraRotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, cameraRotation.x));
+                    }
+                    previousMousePosition = { x: e.clientX, y: e.clientY };
+                }
+            });
+
+            renderer.domElement.addEventListener('mouseup', () => { isDragging = false; });
+            renderer.domElement.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                cameraDistance += e.deltaY * 0.1;
+                cameraDistance = Math.max(50, Math.min(1000, cameraDistance));
+            });
+            renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            // Stars
+            const starsGeometry = new THREE.BufferGeometry();
+            const starsVertices = [];
+            for (let i = 0; i < 10000; i++) {
+                starsVertices.push((Math.random() - 0.5) * 3000, (Math.random() - 0.5) * 3000, (Math.random() - 0.5) * 3000);
+            }
+            starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+            const stars = new THREE.Points(starsGeometry, new THREE.PointsMaterial({ color: 0xffffff, size: 0.8 }));
+            scene.add(stars);
+
+            // Sun
+            const sun = new THREE.Mesh(
+                new THREE.SphereGeometry(25, 32, 32),
+                new THREE.MeshBasicMaterial({ color: 0xffff00 })
+            );
+            sun.position.set(-400, 0, 0);
+            scene.add(sun);
+
+            const sunLight = new THREE.PointLight(0xffffff, 2.5, 2000);
+            sunLight.position.copy(sun.position);
+            scene.add(sunLight);
+
+            const ambientLight = new THREE.AmbientLight(0x222222, 0.3);
+            scene.add(ambientLight);
+
+            // Earth
+            const earth = new THREE.Mesh(
+                new THREE.SphereGeometry(18, 64, 64),
+                new THREE.MeshPhongMaterial({ color: 0x2244ff, specular: 0x222222 })
+            );
+            scene.add(earth);
+
+            const atmosphere = new THREE.Mesh(
+                new THREE.SphereGeometry(19, 64, 64),
+                new THREE.MeshBasicMaterial({ color: 0x4488ff, transparent: true, opacity: 0.15, side: THREE.BackSide })
+            );
+            scene.add(atmosphere);
+
+            // Moon
+            const moon = new THREE.Mesh(
+                new THREE.SphereGeometry(5, 32, 32),
+                new THREE.MeshPhongMaterial({ color: 0xaaaaaa, specular: 0x111111 })
+            );
+            scene.add(moon);
+
+            const trailPositions = [];
+            const trailLine = new THREE.Line(
+                new THREE.BufferGeometry(),
+                new THREE.LineBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.3 })
+            );
+            scene.add(trailLine);
+
+            const orbitRing = new THREE.Mesh(
+                new THREE.RingGeometry(69, 70, 128),
+                new THREE.MeshBasicMaterial({ color: 0x444444, side: THREE.DoubleSide, transparent: true, opacity: 0.2 })
+            );
+            orbitRing.rotation.x = Math.PI / 2;
+            orbitRing.rotation.y = 0.087;
+            scene.add(orbitRing);
+
+            // Shadow geometry
+            const createShadowGeometry = (topStart, topEnd, bottomStart, bottomEnd, segments = 32) => {
+                const geometry = new THREE.BufferGeometry();
+                const vertices = [];
+                const indices = [];
+
+                for (let i = 0; i <= segments; i++) {
+                    const angle = (i / segments) * Math.PI * 2;
+                    const cos = Math.cos(angle);
+                    const sin = Math.sin(angle);
+
+                    const startY = (topStart.y + bottomStart.y) / 2;
+                    const startRadius = Math.abs(topStart.y - startY);
+                    vertices.push(topStart.x, startY + cos * startRadius, sin * startRadius);
+
+                    const endY = (topEnd.y + bottomEnd.y) / 2;
+                    const endRadius = Math.abs(topEnd.y - endY);
+                    vertices.push(topEnd.x, endY + cos * endRadius, sin * endRadius);
+                }
+
+                for (let i = 0; i < segments; i++) {
+                    const base = i * 2;
+                    const next = ((i + 1) % (segments + 1)) * 2;
+                    indices.push(base, base + 1, next);
+                    indices.push(base + 1, next + 1, next);
+                }
+
+                geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+                geometry.setIndex(indices);
+                geometry.computeVertexNormals();
+                return geometry;
+            };
+
+            const umbraCone = new THREE.Mesh(
+                createShadowGeometry({ x: 0, y: 18 }, { x: 350, y: 1 }, { x: 0, y: -18 }, { x: 350, y: -1 }),
+                new THREE.MeshBasicMaterial({ color: 0x440000, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
+            );
+            scene.add(umbraCone);
+
+            const penumbraCone = new THREE.Mesh(
+                createShadowGeometry({ x: 0, y: 18 }, { x: 450, y: 45 }, { x: 0, y: -18 }, { x: 450, y: -45 }),
+                new THREE.MeshBasicMaterial({ color: 0x5588aa, transparent: true, opacity: 0.28, side: THREE.DoubleSide })
+            );
+            scene.add(penumbraCone);
+
+            const shadowCones = [umbraCone, penumbraCone];
+
+            // Light rays
+            const allRays = [];
+            const createRay = (points, color, opacity, linewidth = 1) => {
+                const geom = new THREE.BufferGeometry().setFromPoints(points);
+                const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity, linewidth });
+                const line = new THREE.Line(geom, mat);
+                scene.add(line);
+                allRays.push(line);
+                return line;
+            };
+
+            createRay([new THREE.Vector3(-400, 25, 0), new THREE.Vector3(0, 18, 0), new THREE.Vector3(450, 45, 0)], 0xffcc00, 0.7, 2);
+            createRay([new THREE.Vector3(-400, -25, 0), new THREE.Vector3(0, -18, 0), new THREE.Vector3(450, -45, 0)], 0xffcc00, 0.7, 2);
+            createRay([new THREE.Vector3(-400, -25, 0), new THREE.Vector3(0, 18, 0), new THREE.Vector3(350, 2, 0)], 0xff3300, 0.8, 2);
+            createRay([new THREE.Vector3(-400, 25, 0), new THREE.Vector3(0, -18, 0), new THREE.Vector3(350, -2, 0)], 0xff3300, 0.8, 2);
+
+            // Shadow markers
+            const createShadowMarker = (distance, umbraRadius, penumbraRadius) => {
+                if (umbraRadius > 0) {
+                    const umbraCircle = new THREE.Mesh(
+                        new THREE.RingGeometry(umbraRadius - 0.4, umbraRadius + 0.4, 64),
+                        new THREE.MeshBasicMaterial({ color: 0xff3300, side: THREE.DoubleSide, transparent: true, opacity: 0.6 })
+                    );
+                    umbraCircle.position.x = distance;
+                    umbraCircle.rotation.y = Math.PI / 2;
+                    scene.add(umbraCircle);
+                    allRays.push(umbraCircle);
+                }
+
+                const penumbraCircle = new THREE.Mesh(
+                    new THREE.RingGeometry(penumbraRadius - 0.4, penumbraRadius + 0.4, 64),
+                    new THREE.MeshBasicMaterial({ color: 0xffcc00, side: THREE.DoubleSide, transparent: true, opacity: 0.5 })
+                );
+                penumbraCircle.position.x = distance;
+                penumbraCircle.rotation.y = Math.PI / 2;
+                scene.add(penumbraCircle);
+                allRays.push(penumbraCircle);
+            };
+
+            const moonOrbitDist = 70;
+            createShadowMarker(moonOrbitDist, 18 - (moonOrbitDist / 350) * 16, 18 + (moonOrbitDist / 450) * 27);
+            createShadowMarker(150, 18 - (150 / 350) * 16, 18 + (150 / 450) * 27);
+            createShadowMarker(250, 18 - (250 / 350) * 16, 18 + (250 / 450) * 27);
+
+            const umbraApex = new THREE.Mesh(
+                new THREE.SphereGeometry(3, 16, 16),
+                new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.9 })
+            );
+            umbraApex.position.set(350, 0, 0);
+            scene.add(umbraApex);
+            allRays.push(umbraApex);
+
+            createRay([new THREE.Vector3(0, 18, 0), new THREE.Vector3(350, 2, 0)], 0xff6600, 0.4, 1);
+            createRay([new THREE.Vector3(0, -18, 0), new THREE.Vector3(350, -2, 0)], 0xff6600, 0.4, 1);
+            createRay([new THREE.Vector3(0, 18, 0), new THREE.Vector3(450, 45, 0)], 0xaacc66, 0.3, 1);
+            createRay([new THREE.Vector3(0, -18, 0), new THREE.Vector3(450, -45, 0)], 0xaacc66, 0.3, 1);
+
+            const dashedLineMaterial = new THREE.LineDashedMaterial({
+                color: 0xffffff, transparent: true, opacity: 0.4, dashSize: 3, gapSize: 2, linewidth: 1
+            });
+
+            const umbraEdgeTop = new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 18, 0), new THREE.Vector3(350, 0, 0)]),
+                dashedLineMaterial.clone()
+            );
+            umbraEdgeTop.computeLineDistances();
+            scene.add(umbraEdgeTop);
+            allRays.push(umbraEdgeTop);
+
+            const umbraEdgeBottom = new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, -18, 0), new THREE.Vector3(350, 0, 0)]),
+                dashedLineMaterial.clone()
+            );
+            umbraEdgeBottom.computeLineDistances();
+            scene.add(umbraEdgeBottom);
+            allRays.push(umbraEdgeBottom);
+
+            const penumbraEdgeTop = new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 18, 0), new THREE.Vector3(450, 45, 0)]),
+                dashedLineMaterial.clone()
+            );
+            penumbraEdgeTop.computeLineDistances();
+            scene.add(penumbraEdgeTop);
+            allRays.push(penumbraEdgeTop);
+
+            const penumbraEdgeBottom = new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, -18, 0), new THREE.Vector3(450, -45, 0)]),
+                dashedLineMaterial.clone()
+            );
+            penumbraEdgeBottom.computeLineDistances();
+            scene.add(penumbraEdgeBottom);
+            allRays.push(penumbraEdgeBottom);
+
+            const earthLimbTop = new THREE.Mesh(
+                new THREE.SphereGeometry(1.5, 16, 16),
+                new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 1.0 })
+            );
+            earthLimbTop.position.set(0, 18, 0);
+            scene.add(earthLimbTop);
+            allRays.push(earthLimbTop);
+
+            const earthLimbBottom = new THREE.Mesh(
+                new THREE.SphereGeometry(1.5, 16, 16),
+                new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 1.0 })
+            );
+            earthLimbBottom.position.set(0, -18, 0);
+            scene.add(earthLimbBottom);
+            allRays.push(earthLimbBottom);
+
+            const earthEdgeCircleTop = new THREE.Mesh(
+                new THREE.RingGeometry(17, 19, 32),
+                new THREE.MeshBasicMaterial({ color: 0xff8800, side: THREE.DoubleSide, transparent: true, opacity: 0.6 })
+            );
+            earthEdgeCircleTop.rotation.x = Math.PI / 2;
+            earthEdgeCircleTop.position.y = 18;
+            scene.add(earthEdgeCircleTop);
+            allRays.push(earthEdgeCircleTop);
+
+            const earthEdgeCircleBottom = new THREE.Mesh(
+                new THREE.RingGeometry(17, 19, 32),
+                new THREE.MeshBasicMaterial({ color: 0xff8800, side: THREE.DoubleSide, transparent: true, opacity: 0.6 })
+            );
+            earthEdgeCircleBottom.rotation.x = Math.PI / 2;
+            earthEdgeCircleBottom.position.y = -18;
+            scene.add(earthEdgeCircleBottom);
+            allRays.push(earthEdgeCircleBottom);
+
+            // Labels
+            const createLabel = (text) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 256;
+                canvas.height = 64;
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0, 0, 256, 64);
+                ctx.font = 'Bold 24px Arial';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.fillText(text, 128, 40);
+                const texture = new THREE.CanvasTexture(canvas);
+                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture }));
+                sprite.scale.set(30, 7.5, 1);
+                return sprite;
+            };
+
+            const sunLabel = createLabel('Sun');
+            sunLabel.position.set(-400, 35, 0);
+            scene.add(sunLabel);
+
+            const earthLabel = createLabel('Earth');
+            earthLabel.position.set(0, 28, 0);
+            scene.add(earthLabel);
+
+            const moonLabel = createLabel('Moon');
+            scene.add(moonLabel);
+
+            const umbraLabel = createLabel('UMBRA');
+            umbraLabel.position.set(150, -22, 0);
+            scene.add(umbraLabel);
+
+            const penumbraLabel = createLabel('PENUMBRA');
+            penumbraLabel.position.set(200, 28, 0);
+            scene.add(penumbraLabel);
+
+            const apexLabel = createLabel('Umbra Apex');
+            apexLabel.position.set(350, -18, 0);
+            apexLabel.scale.set(28, 7, 1);
+            scene.add(apexLabel);
+
+            const originLabel = createLabel('Cone Origins');
+            originLabel.position.set(-15, 24, 0);
+            originLabel.scale.set(22, 5.5, 1);
+            scene.add(originLabel);
+            allRays.push(originLabel);
+
+            // Equation Labels in 3D Space
+            const createEquationLabel = (text, fontSize = 20, bgColor = 'rgba(139, 92, 246, 0.8)') => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 512;
+                canvas.height = 128;
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(0, 0, 512, 128);
+                ctx.font = `Bold ${fontSize}px Arial`;
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.fillText(text, 256, 70);
+                const texture = new THREE.CanvasTexture(canvas);
+                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }));
+                sprite.scale.set(40, 10, 1);
+                return sprite;
+            };
+
+            // Umbra equation label
+            const umbraEqLabel = createEquationLabel('r_u(x) = R⊕(1 - x/L_u)', 18, 'rgba(255, 51, 0, 0.85)');
+            umbraEqLabel.position.set(180, -30, 0);
+            scene.add(umbraEqLabel);
+
+            // Penumbra equation label
+            const penumbraEqLabel = createEquationLabel('r_p(x) = R⊕ + x(R☉+R⊕)/d☉', 16, 'rgba(255, 204, 0, 0.85)');
+            penumbraEqLabel.position.set(220, 38, 0);
+            scene.add(penumbraEqLabel);
+
+            // Rayleigh scattering label near Moon
+            const rayleighLabel = createEquationLabel('Rayleigh: σ(λ) ∝ 1/λ⁴', 20, 'rgba(255, 107, 107, 0.9)');
+            rayleighLabel.position.set(100, 50, 0);
+            scene.add(rayleighLabel);
+
+            // Apex distance label
+            const apexEqLabel = createEquationLabel('L_u = R⊕d☉/(R☉-R⊕) = 350', 16, 'rgba(139, 92, 246, 0.85)');
+            apexEqLabel.position.set(350, 15, 0);
+            apexEqLabel.scale.set(38, 9.5, 1);
+            scene.add(apexEqLabel);
+
+            // Moon position equation
+            const moonPosLabel = createEquationLabel('r_Moon(t) = a[cos(ωt), sin(ωt)sin(i), ...]', 14, 'rgba(78, 205, 196, 0.85)');
+            moonPosLabel.position.set(70, 85, 0);
+            moonPosLabel.scale.set(45, 11.25, 1);
+            scene.add(moonPosLabel);
+
+            // Dynamic calculation label (will update in real-time)
+            const createDynamicLabel = (initialText) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512;
+                canvas.height = 96;
+                const texture = new THREE.CanvasTexture(canvas);
+                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }));
+                sprite.scale.set(50, 12, 1);
+                sprite.canvas = canvas;
+                sprite.texture = texture;
+                return sprite;
+            };
+
+            const calcLabel = createDynamicLabel('');
+            calcLabel.position.set(70, -55, 0);
+            scene.add(calcLabel);
+
+            // Function to update dynamic label
+            function updateCalcLabel(perpDist, umbraR, penumbraR) {
+                const ctx = calcLabel.canvas.getContext('2d');
+                ctx.clearRect(0, 0, 512, 96);
+                ctx.fillStyle = 'rgba(139, 92, 246, 0.9)';
+                ctx.fillRect(0, 0, 512, 96);
+                ctx.font = 'Bold 16px Arial';
+                ctx.fillStyle = 'white';
+                ctx.textAlign = 'center';
+                ctx.fillText(`d⊥=${perpDist.toFixed(1)} | r_u=${umbraR.toFixed(1)} | r_p=${penumbraR.toFixed(1)}`, 256, 35);
+                ctx.font = '14px Arial';
+                ctx.fillText(`Eclipse Check: d⊥ < r_u ? ${perpDist < umbraR}`, 256, 65);
+                calcLabel.texture.needsUpdate = true;
+            }
+
+            const allLabels = [sunLabel, earthLabel, moonLabel, umbraLabel, penumbraLabel, apexLabel, originLabel];
+            const equationLabels = [umbraEqLabel, penumbraEqLabel, rayleighLabel, apexEqLabel, moonPosLabel, calcLabel];
+
+            let time = Math.PI;
+            const moonOrbitRadius = 70;
+            const moonOrbitSpeed = 0.0008;
+            let timeScale = 2.0;
+            let isPaused = false;
+            let currentView = 'orbit';
+
+            const toggleStates = {
+                shadows: true,
+                rays: true,
+                labels: true,
+                trails: true,
+                equations: true
+            };
+
+            const playPauseBtn = document.getElementById('play-pause-btn');
+            const speedSlider = document.getElementById('speed-slider');
+            const speedValue = document.getElementById('speed-value');
+            const progressFill = document.getElementById('progress-fill');
+
+            playPauseBtn.addEventListener('click', () => {
+                isPaused = !isPaused;
+                const icon = playPauseBtn.querySelector('i');
+                const text = playPauseBtn.querySelector('span');
+                if (isPaused) {
+                    icon.setAttribute('data-lucide', 'play');
+                    text.textContent = 'Play';
+                    playPauseBtn.classList.remove('btn-primary');
+                } else {
+                    icon.setAttribute('data-lucide', 'pause');
+                    text.textContent = 'Pause';
+                    playPauseBtn.classList.add('btn-primary');
+                }
+                lucide.createIcons();
+            });
+
+            document.getElementById('step-back-btn').addEventListener('click', () => {
+                time -= 0.1;
+            });
+
+            document.getElementById('step-forward-btn').addEventListener('click', () => {
+                time += 0.1;
+            });
+
+            document.getElementById('reset-btn').addEventListener('click', () => {
+                time = Math.PI;
+                trailPositions.length = 0;
+            });
+
+            speedSlider.addEventListener('input', (e) => {
+                timeScale = parseFloat(e.target.value);
+                speedValue.textContent = timeScale.toFixed(1) + 'x';
+            });
+
+            document.querySelectorAll('.camera-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.camera-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentView = btn.dataset.view;
+                });
+            });
+
+            document.querySelectorAll('.toggle-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const toggle = item.dataset.toggle;
+                    toggleStates[toggle] = !toggleStates[toggle];
+                    item.querySelector('.toggle-switch').classList.toggle('active');
+                });
+            });
+
+            // Toggle equations panel
+            const equationsPanel = document.querySelector('.equations-panel');
+            const toggleEquationsBtn = document.getElementById('toggle-equations-btn');
+            toggleEquationsBtn.addEventListener('click', () => {
+                if (equationsPanel.style.display === 'none') {
+                    equationsPanel.style.display = 'block';
+                } else {
+                    equationsPanel.style.display = 'none';
+                }
+            });
+
+            function calculateEclipse(moonPos) {
+                const earthToMoon = new THREE.Vector3().subVectors(moonPos, earth.position);
+                const sunToEarth = new THREE.Vector3().subVectors(earth.position, sun.position).normalize();
+                const projection = earthToMoon.dot(sunToEarth);
+
+                if (projection > 0 && projection < 450) {
+                    const perpDist = Math.sqrt(Math.max(0, earthToMoon.lengthSq() - projection * projection));
+                    const umbraR = Math.max(0, 18 - (projection / 350) * 16);
+                    const penumbraR = 18 + (projection / 450) * 27;
+
+                    // Update dynamic calculation label
+                    updateCalcLabel(perpDist, umbraR, penumbraR);
+
+                    if (perpDist < umbraR - 4) {
+                        return { phase: 'Total Eclipse', shadow: 1.0, color: { r: 0.85, g: 0.08, b: 0.03 } };
+                    } else if (perpDist < umbraR) {
+                        const f = (umbraR - perpDist) / 4;
+                        return { phase: 'Entering Totality', shadow: 0.7 + f * 0.3, color: { r: 0.9, g: 0.15, b: 0.08 } };
+                    } else if (perpDist < penumbraR - 4) {
+                        return { phase: 'Partial Eclipse', shadow: 0.35, color: { r: 0.75, g: 0.55, b: 0.4 } };
+                    } else if (perpDist < penumbraR) {
+                        const f = (penumbraR - perpDist) / 4;
+                        return { phase: 'Penumbral Eclipse', shadow: f * 0.35, color: { r: 0.72, g: 0.65, b: 0.58 } };
+                    }
+                } else {
+                    // Update label even when outside shadow
+                    const perpDist = Math.sqrt(Math.max(0, earthToMoon.lengthSq() - projection * projection));
+                    updateCalcLabel(perpDist, 0, 0);
+                }
+                return { phase: 'No Eclipse', shadow: 0, color: { r: 0.67, g: 0.67, b: 0.67 } };
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                if (!isPaused) {
+                    time += moonOrbitSpeed * timeScale;
+                    const inc = 0.087;
+                    moon.position.x = Math.cos(time) * moonOrbitRadius;
+                    moon.position.z = Math.sin(time) * moonOrbitRadius * Math.cos(inc);
+                    moon.position.y = Math.sin(time) * moonOrbitRadius * Math.sin(inc);
+
+                    if (toggleStates.trails) {
+                        trailPositions.push(moon.position.x, moon.position.y, moon.position.z);
+                        if (trailPositions.length > 600) trailPositions.splice(0, 3);
+                        trailLine.geometry.setAttribute('position', new THREE.Float32BufferAttribute(trailPositions, 3));
+                    }
+
+                    const eclipse = calculateEclipse(moon.position);
+                    moon.material.color.setRGB(eclipse.color.r, eclipse.color.g, eclipse.color.b);
+
+                    if (eclipse.shadow > 0.6) {
+                        moon.material.emissive.setRGB(eclipse.shadow * 0.4, eclipse.shadow * 0.05, 0.02 * eclipse.shadow);
+                    } else {
+                        moon.material.emissive.setRGB(0, 0, 0);
+                    }
+
+                    document.getElementById('phase-name').textContent = eclipse.phase;
+                    document.getElementById('phase-shadow').textContent = `Shadow: ${(eclipse.shadow * 100).toFixed(1)}%`;
+                    progressFill.style.width = (eclipse.shadow * 100) + '%';
+
+                    document.getElementById('moon-distance').textContent = moon.position.distanceTo(earth.position).toFixed(1);
+                    document.getElementById('moon-angle').textContent = ((time * 180 / Math.PI) % 360).toFixed(0) + '°';
+
+                    earth.rotation.y += 0.001;
+                    moon.rotation.y += 0.003;
+                }
+
+                moonLabel.position.copy(moon.position);
+                moonLabel.position.y += 12;
+
+                if (currentView === 'orbit') {
+                    const x = Math.sin(cameraRotation.y) * Math.cos(cameraRotation.x) * cameraDistance;
+                    const y = Math.sin(cameraRotation.x) * cameraDistance;
+                    const z = Math.cos(cameraRotation.y) * Math.cos(cameraRotation.x) * cameraDistance;
+                    camera.position.set(x + panOffset.x, y + panOffset.y, z + panOffset.z);
+                    camera.lookAt(0, 0, 0);
+                } else if (currentView === 'side') {
+                    camera.position.set(0, 80, 350);
+                    camera.lookAt(0, 0, 0);
+                } else if (currentView === 'top') {
+                    camera.position.set(0, 400, 0);
+                    camera.lookAt(0, 0, 0);
+                } else if (currentView === 'moon') {
+                    camera.position.copy(moon.position);
+                    camera.position.y += 15;
+                    camera.position.z += 25;
+                    camera.lookAt(earth.position);
+                }
+
+                shadowCones.forEach(c => c.visible = toggleStates.shadows);
+                allRays.forEach(r => r.visible = toggleStates.rays);
+                allLabels.forEach(l => l.visible = toggleStates.labels);
+                equationLabels.forEach(l => l.visible = toggleStates.equations);
+                trailLine.visible = toggleStates.trails;
+                orbitRing.visible = toggleStates.shadows;
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+    </script>
+
+    <!-- Equations Panel -->
+    <div class="equations-panel">
+        <div class="equations-header">
+            <div class="equations-title">📐 Physics Equations</div>
+        </div>
+
+        <div class="equation-item">
+            <div class="equation-label">Umbra Radius (Eq. 3)</div>
+            <div class="equation-formula">
+                <i>r</i><sub>u</sub>(<i>x</i>) = <i>R</i><sub>⊕</sub>(1 − <i>x</i>/<i>L</i><sub>u</sub>)
+            </div>
+            <div class="equation-description">
+                Radius of the <span class="equation-highlight">umbra</span> (complete shadow) at distance <span class="equation-var">x</span> from Earth.
+                The umbra <span class="equation-highlight">converges</span> to an apex.
+            </div>
+        </div>
+
+        <div class="equation-item">
+            <div class="equation-label">Penumbra Radius (Eq. 4)</div>
+            <div class="equation-formula">
+                <i>r</i><sub>p</sub>(<i>x</i>) = <i>R</i><sub>⊕</sub> + <i>x</i>(<i>R</i><sub>☉</sub> + <i>R</i><sub>⊕</sub>)/<i>d</i><sub>☉</sub>
+            </div>
+            <div class="equation-description">
+                Radius of the <span class="equation-highlight">penumbra</span> (partial shadow) at distance <span class="equation-var">x</span>.
+                The penumbra <span class="equation-highlight">diverges</span> outward.
+            </div>
+        </div>
+
+        <div class="equation-item">
+            <div class="equation-label">Lunar Position (Eq. 5)</div>
+            <div class="equation-formula">
+                <b>r</b><sub>Moon</sub>(<i>t</i>) = <i>a</i>[cos(<i>ωt</i>), sin(<i>ωt</i>)sin(<i>i</i>), sin(<i>ωt</i>)cos(<i>i</i>)]
+            </div>
+            <div class="equation-description">
+                Moon's orbital position with inclination <span class="equation-var">i</span> = 5.14°.
+                Causes Moon to pass through shadow <span class="equation-highlight">vertically</span>.
+            </div>
+        </div>
+
+        <div class="equation-item">
+            <div class="equation-label">Perpendicular Distance (Eq. 8)</div>
+            <div class="equation-formula">
+                <i>d</i><sub>⊥</sub> = √(|<b>r</b><sub>rel</sub>|² − <i>λ</i>²)
+            </div>
+            <div class="equation-description">
+                Distance from Moon to shadow axis. Used to determine <span class="equation-highlight">eclipse phase</span>:
+                <br>• Total: <span class="equation-var">d<sub>⊥</sub> < r<sub>u</sub></span>
+                <br>• Partial: <span class="equation-var">r<sub>u</sub> < d<sub>⊥</sub> < r<sub>p</sub></span>
+            </div>
+        </div>
+
+        <div class="equation-item rayleigh-section">
+            <div class="equation-label">🔴 Rayleigh Scattering</div>
+            <div class="equation-formula">
+                σ(<i>λ</i>) ∝ 1/<i>λ</i>⁴
+            </div>
+            <div class="equation-description">
+                <span class="equation-highlight">Wavelength dependence</span> of atmospheric scattering.
+                Blue light (<i>λ</i> = 450nm) scatters <span class="equation-highlight">4.2× more</span> than red light (<i>λ</i> = 650nm).
+                <br><br>
+                <b>Result:</b> During totality, Earth's atmosphere <span class="equation-highlight">filters out blue</span>,
+                allowing only <span class="equation-highlight">red wavelengths</span> to refract onto the Moon → <span class="equation-highlight">Blood Moon</span> 🌕
+            </div>
+        </div>
+
+        <div class="equation-item rayleigh-section">
+            <div class="equation-label">Blood Moon Color Model (Eq. 9)</div>
+            <div class="equation-formula">
+                RGB = (0.85, 0.08, 0.03) during totality
+            </div>
+            <div class="equation-description">
+                <span class="equation-highlight">Red channel dominant</span> (85%),
+                <span class="equation-highlight">blue suppressed</span> (3%).
+                <br>Ratio: <span class="equation-var">R:B = 28:1</span>
+                <br>This creates the characteristic <span class="equation-highlight">copper-red glow</span>.
+            </div>
+        </div>
+
+        <div class="equation-item">
+            <div class="equation-label">Umbral Apex Distance (Eq. 2)</div>
+            <div class="equation-formula">
+                <i>L</i><sub>u</sub> = <i>R</i><sub>⊕</sub><i>d</i><sub>☉</sub> / (<i>R</i><sub>☉</sub> − <i>R</i><sub>⊕</sub>)
+            </div>
+            <div class="equation-description">
+                Distance from Earth to the <span class="equation-highlight">umbral apex</span> (where umbra converges to a point).
+                <br>In simulation: <span class="equation-var">L<sub>u</sub> = 350 units</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
